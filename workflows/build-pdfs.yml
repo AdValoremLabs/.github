@@ -1,23 +1,38 @@
 name: Build Quickstart PDFs
 on:
-  push: { tags: ['v*'] }
+  push:
+    tags:
+      - "v*"
+
 jobs:
   pdf:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Install pandoc
         run: sudo apt-get update && sudo apt-get install -y pandoc
-      - name: Render PDFs (white background)
+
+      - name: Render quickstart PDFs
         run: |
-          find docs -name "quickstart.md" -print0 | while IFS= read -r -d '' f; do
+          # Render all quickstart.md files to PDF using a white background
+          shopt -s globstar nullglob
+          for f in docs/**/quickstart.md docs/quickstart.md; do
+            [ -f "$f" ] || continue
             out="${f%.md}.pdf"
             pandoc "$f" -o "$out" \
               --pdf-engine=xelatex \
               -V geometry:margin=1in \
-              -V colorlinks=true -V urlcolor=blue
+              -V colorlinks=true \
+              -V urlcolor=blue
+            echo "Built $out"
           done
-      - name: Upload PDFs to release
+
+      - name: Upload PDFs to Release
         uses: softprops/action-gh-release@v2
-        with: { files: "docs/**/quickstart.pdf" }
-        env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
+        with:
+          files: |
+            docs/**/quickstart.pdf
+            docs/quickstart.pdf
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
