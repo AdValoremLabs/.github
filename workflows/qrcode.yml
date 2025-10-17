@@ -1,0 +1,23 @@
+name: Generate QR Codes
+on:
+  push: { paths: ['**/*.md', '.github/workflows/qrcode.yml'] }
+  workflow_dispatch:
+jobs:
+  qr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install qrencode & imagemagick
+        run: sudo apt-get update && sudo apt-get install -y qrencode imagemagick
+      - name: Generate kit QR codes
+        run: |
+          mkdir -p docs/images
+          for path in home-assistant proxmox retropie; do
+            url="https://advaloremlabs.github.io/$path/"
+            qrencode -o "docs/images/${path}-qr.png" -s 10 -m 2 "$url"
+            # Ensure white background, black modules
+            convert "docs/images/${path}-qr.png" -colorspace Gray -background white -alpha remove -alpha off "docs/images/${path}-qr.png"
+          done
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(docs): update QR codes"
